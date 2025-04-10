@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Traffic Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    header {
+      background-color: #1976d2;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+    .dark header {
+      background-color: #0d47a1;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 2rem;
+      gap: 1.5rem;
+    }
+    .chart-card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1rem;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark .chart-card {
+      background-color: #222;
+      color: white;
+    }
+    canvas {
+      width: 100% !important;
+      height: 300px !important;
+    }
+    .download-btn {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .download-btn:hover {
+      background-color: #1259aa;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-toggle" onclick="toggleTheme()">🌙</div>
+  <header>
+    <h1>Smart Traffic Dashboard</h1>
+  </header>
+
+  <div class="container">
+    <div class="chart-card">
+      <h3>Vehicle Count (Bar)</h3>
+      <canvas id="barChart"></canvas>
+      <button onclick="downloadChart('barChart')" class="download-btn">📥 Download</button>
+    </div>
+
+    <div class="chart-card">
+      <h3>Average Speed (Line)</h3>
+      <canvas id="lineChart"></canvas>
+      <button onclick="downloadChart('lineChart')" class="download-btn">📥 Download</button>
+    </div>
+
+    <div class="chart-card">
+      <h3>Vehicle Types (Pie)</h3>
+      <canvas id="pieChart"></canvas>
+      <button onclick="downloadChart('pieChart')" class="download-btn">📥 Download</button>
+    </div>
+
+    <div class="chart-card">
+      <h3>Directional Traffic (Radar)</h3>
+      <canvas id="radarChart"></canvas>
+      <button onclick="downloadChart('radarChart')" class="download-btn">📥 Download</button>
+    </div>
+
+    <div class="chart-card">
+      <h3>Historical Traffic Trend</h3>
+      <canvas id="trafficChart"></canvas>
+      <button onclick="downloadChart('trafficChart')" class="download-btn">📥 Download</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+    }
+
+    new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Vehicles',
+          data: [120, 150, 170, 200, 250, 300, 280],
+          backgroundColor: 'rgba(63, 81, 181, 0.7)'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: {
+        labels: ['6AM', '9AM', '12PM', '3PM', '6PM', '9PM'],
+        datasets: [{
+          label: 'Speed (km/h)',
+          data: [40, 35, 45, 50, 60, 55],
+          borderColor: 'rgba(255, 87, 34, 1)',
+          backgroundColor: 'rgba(255, 87, 34, 0.2)',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+
+    new Chart(document.getElementById('pieChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Cars', 'Bikes', 'Trucks', 'Buses'],
+        datasets: [{
+          label: 'Vehicle Types',
+          data: [40, 30, 20, 10],
+          backgroundColor: ['#42a5f5', '#66bb6a', '#ffa726', '#ab47bc']
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+
+    new Chart(document.getElementById('radarChart'), {
+      type: 'radar',
+      data: {
+        labels: ['North', 'South', 'East', 'West'],
+        datasets: [{
+          label: 'Traffic Intensity',
+          data: [65, 59, 90, 81],
+          backgroundColor: 'rgba(76, 175, 80, 0.2)',
+          borderColor: 'rgba(76, 175, 80, 1)'
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+
+    function downloadChart(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const link = document.createElement('a');
+      link.download = `${canvasId}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    async function loadChart() {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/history");
+        const data = await res.json();
+
+        const timestamps = data.map(d => d.timestamp);
+        const carCounts = data.map(d => d.CarCount);
+        const bikeCounts = data.map(d => d.BikeCount);
+        const busCounts = data.map(d => d.BusCount);
+        const truckCounts = data.map(d => d.TruckCount);
+
+        const ctx = document.getElementById("trafficChart").getContext("2d");
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: timestamps,
+            datasets: [
+              {
+                label: 'Cars',
+                data: carCounts,
+                borderColor: 'blue',
+                fill: false
+              },
+              {
+                label: 'Bikes',
+                data: bikeCounts,
+                borderColor: 'green',
+                fill: false
+              },
+              {
+                label: 'Buses',
+                data: busCounts,
+                borderColor: 'orange',
+                fill: false
+              },
+              {
+                label: 'Trucks',
+                data: truckCounts,
+                borderColor: 'red',
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Failed to load traffic chart:", error);
+      }
+    }
+
+    window.onload = loadChart;
+  </script>
+</body>
+</html>
